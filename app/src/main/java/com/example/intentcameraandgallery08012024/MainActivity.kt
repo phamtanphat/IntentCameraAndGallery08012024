@@ -1,22 +1,29 @@
 package com.example.intentcameraandgallery08012024
 
 import android.Manifest
-import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.Button
+import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultCallback
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.core.content.PackageManagerCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var btnCamera: Button
     private lateinit var btnGallery: Button
+    private lateinit var img: ImageView
     private var REQUEST_CODE_CAMERA = 1
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +37,7 @@ class MainActivity : AppCompatActivity() {
 
         btnGallery = findViewById(R.id.buttonGallery)
         btnCamera = findViewById(R.id.buttonCamera)
+        img = findViewById(R.id.imageView)
 
         btnCamera.setOnClickListener {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -38,6 +46,30 @@ class MainActivity : AppCompatActivity() {
                     arrayOf(Manifest.permission.CAMERA),
                     REQUEST_CODE_CAMERA
                 )
+            } 
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if (requestCode == REQUEST_CODE_CAMERA) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                cameraLauncher.launch(intent)
+            }
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    private val cameraLauncher : ActivityResultLauncher<Intent> = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            result.data?.extras?.get("data").let {
+                img.setImageBitmap(it as Bitmap)
             }
         }
     }
