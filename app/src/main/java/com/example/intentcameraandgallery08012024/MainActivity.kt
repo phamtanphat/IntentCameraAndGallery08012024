@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnGallery: Button
     private lateinit var img: ImageView
     private var REQUEST_CODE_CAMERA = 1
+    private var REQUEST_CODE_GALLERY = 2
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -60,6 +61,24 @@ class MainActivity : AppCompatActivity() {
                 openCamera()
             }
         }
+
+        btnGallery.setOnClickListener {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_MEDIA_IMAGES)) {
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    intent.data = Uri.fromParts("package", packageName, null)
+                    startActivity(intent)
+                } else {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.READ_MEDIA_IMAGES),
+                        REQUEST_CODE_GALLERY
+                    )
+                }
+            } else {
+                openGallery()
+            }
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -72,6 +91,12 @@ class MainActivity : AppCompatActivity() {
                 openCamera()
             }
         }
+
+        if (requestCode == REQUEST_CODE_GALLERY) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+                openGallery()
+            }
+        }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
@@ -80,12 +105,28 @@ class MainActivity : AppCompatActivity() {
         cameraLauncher.launch(intent)
     }
 
+    private fun openGallery() {
+        val intent = Intent(Intent.ACTION_PICK)
+        intent.type = "image/*"
+        galleryLauncher.launch(intent)
+    }
+
     private val cameraLauncher : ActivityResultLauncher<Intent> = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             result.data?.extras?.get("data").let {
                 img.setImageBitmap(it as Bitmap)
+            }
+        }
+    }
+
+    private val galleryLauncher : ActivityResultLauncher<Intent> = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            result.data?.data?.let {
+                img.setImageURI(it)
             }
         }
     }
